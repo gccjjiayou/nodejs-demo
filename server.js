@@ -6,6 +6,7 @@ const bodyParser = require('body-parser')
 const multer = require('multer')
 const consolidate = require('consolidate')
 const mysql = require('mysql')
+const common = require('./libs/common')
 
 // 连接池
 const db = mysql.createPool({
@@ -73,7 +74,26 @@ server.get('/', (req, res) => {
   })
 })
 server.get('/article', (req, res) => {
-  res.render('conText.ejs', {})
+  if(req.query.id) {
+    db.query(`SELECT * FROM article_table WHERE ID=${req.query.id}`, (err, data) => {
+      if(err) {
+        res.status(500).send('数据有问题').end()
+      } else {
+        if(data.length === 0) {
+          res.status(404).send('您请求的页面找不到').end()
+        } else {
+          var articleData = data[0]
+          articleData.sDate = common.time2date(articleData.post_time)
+          articleData.content = articleData.content.replace(/^/gm, '<p>').replace(/$/gm, '</p>')
+          res.render('conText.ejs', {
+            article_data: articleData
+          })
+        }
+      }
+    })
+  } else {
+    res.status(404).send('您请求的文章找不到').end()
+  }
 })
 
 // 6. static数据
